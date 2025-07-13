@@ -1,36 +1,35 @@
 package com.eaglebank.eaglebank_api.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 @Entity
 @Table(name = "users")
 @Data
 public class User {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String id; // Use usr-xxxx format
-
+    private String id;
     private String name;
-
-    @Embedded
-    private Address address;
-
     private String email;
-
+    private String passwordHash;
     private String phoneNumber;
+    private String address; 
+    // Store as JSON string or split into fields as needed
+    @Column(name = "created_timestamp", nullable = false, updatable = false)
+    // @CreationTimestamp
+    private OffsetDateTime createdTimestamp;
 
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
-}
+    @Column(name = "updated_timestamp", nullable = false)
+    // @UpdateTimestamp
+    private OffsetDateTime updatedTimestamp;
+} 
