@@ -1,44 +1,10 @@
 package com.eaglebank.eaglebank_api.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum Currency {
-    USD,
-    EUR,
     GBP,
-    JPY,
-    CAD,
-    AUD,
-    CHF,
-    CNY,
-    INR,
-    BRL,
-    RUB,
-    KRW,
-    MXN,
-    SGD,
-    HKD,
-    SEK,
-    NOK,
-    DKK,
-    PLN,
-    CZK,
-    HUF,
-    RON,
-    BGN,
-    HRK,
-    TRY,
-    ZAR,
-    THB,
-    MYR,
-    IDR,
-    PHP,
-    VND,
-    EGP,
-    NGN,
-    KES,
-    GHS,
-    MAD,
-    TND,
-    DZD,
-    LYD,
-    SDG
-} 
+    USD,
+    EUR
+}
