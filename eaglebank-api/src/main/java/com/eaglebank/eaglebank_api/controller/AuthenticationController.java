@@ -22,7 +22,6 @@ public class AuthenticationController {
 
     @PostMapping("/authenticate")
     public ResponseEntity<AuthResponse> authenticate(@RequestBody @Valid AuthRequest request) {
-        System.out.println("Authenticating user: " + request.getEmail());
         try {
             AuthResponse response = authenticationService.authenticate(request);
             return ResponseEntity.ok(response);

@@ -64,5 +64,24 @@ public class UserServiceTest {
         assertEquals("jane.doe@example.com", result.getEmail());
     }
 
+    @Test
+    void fetchUserById_UserFound_ReturnsUserResponse() {
+        when(userRepository.findById("usr-12345678")).thenReturn(java.util.Optional.of(user));
+        when(userMapper.toResponse(user)).thenReturn(response);
+        UserResponse result = userService.fetchUserById("usr-12345678");
+        assertNotNull(result);
+        assertEquals("usr-12345678", result.getId());
+        assertEquals("Jane Doe", result.getName());
+        assertEquals("jane.doe@example.com", result.getEmail());
+    }
+
+    @Test
+    void fetchUserById_UserNotFound_ThrowsNotFoundException() {
+        when(userRepository.findById("usr-99999999")).thenReturn(java.util.Optional.empty());
+        Exception exception = assertThrows(com.eaglebank.eaglebank_api.exception.NotFoundException.class, () -> {
+            userService.fetchUserById("usr-99999999");
+        });
+        assertEquals("User not found", exception.getMessage());
+    }
    
 } 

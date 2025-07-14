@@ -104,7 +104,7 @@ class CreateUserRequestTest {
         assertEquals(1, violations.size());
         ConstraintViolation<CreateUserRequest> violation = violations.iterator().next();
         assertEquals("name", violation.getPropertyPath().toString());
-        assertEquals("must not be null", violation.getMessage());
+        assertEquals("must not be blank", violation.getMessage());
     }
 
     @Test
@@ -149,7 +149,7 @@ class CreateUserRequestTest {
         assertEquals(1, violations.size());
         ConstraintViolation<CreateUserRequest> violation = violations.iterator().next();
         assertEquals("phoneNumber", violation.getPropertyPath().toString());
-        assertEquals("must not be null", violation.getMessage());
+        assertEquals("must not be blank", violation.getMessage());
     }
 
     @Test
@@ -223,7 +223,7 @@ class CreateUserRequestTest {
         assertEquals(1, violations.size());
         ConstraintViolation<CreateUserRequest> violation = violations.iterator().next();
         assertEquals("email", violation.getPropertyPath().toString());
-        assertEquals("must not be null", violation.getMessage());
+        assertEquals("must not be blank", violation.getMessage());
     }
 
     @Test
@@ -297,7 +297,7 @@ class CreateUserRequestTest {
         assertEquals(1, violations.size());
         ConstraintViolation<CreateUserRequest> violation = violations.iterator().next();
         assertEquals("password", violation.getPropertyPath().toString());
-        assertEquals("must not be null", violation.getMessage());
+        assertEquals("must not be blank", violation.getMessage());
     }
 
     @Test

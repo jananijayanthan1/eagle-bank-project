@@ -19,6 +19,12 @@ import java.time.OffsetDateTime;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.eaglebank.eaglebank_api.security.JwtUtil;
+import com.eaglebank.eaglebank_api.exception.NotFoundException;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.mockito.Mockito.when;
 
 @WebMvcTest(UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -27,6 +33,8 @@ class UserControllerTest {
     private MockMvc mockMvc;
     @MockBean
     private UserService userService;
+    @MockBean
+    private JwtUtil jwtUtil;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -73,5 +81,63 @@ class UserControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void fetchUserById_ValidRequest_ReturnsOk() throws Exception {
+        String userId = "usr-12345678";
+        String token = "valid.jwt.token";
+        when(jwtUtil.extractUserId(token)).thenReturn(userId);
+        when(userService.fetchUserById(userId)).thenReturn(userResponse);
+        mockMvc.perform(get("/v1/users/" + userId)
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(userId))
+                .andExpect(jsonPath("$.name").value("Jane Doe"));
+    }
+
+    @Test
+    void fetchUserById_InvalidUserIdFormat_ReturnsBadRequest() throws Exception {
+        String invalidUserId = "invalid-id";
+        String token = "any.jwt.token";
+        mockMvc.perform(get("/v1/users/" + invalidUserId)
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid userId format"));
+    }
+
+    @Test
+    void fetchUserById_JwtUserIdMismatch_ReturnsForbidden() throws Exception {
+        String userId = "usr-12345678";
+        String token = "valid.jwt.token";
+        when(jwtUtil.extractUserId(token)).thenReturn("usr-other");
+        mockMvc.perform(get("/v1/users/" + userId)
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Forbidden: token does not match requested userId"));
+    }
+
+    @Test
+    void fetchUserById_UserNotFound_ReturnsNotFound() throws Exception {
+        String userId = "usr-12345678";
+        String token = "valid.jwt.token";
+        when(jwtUtil.extractUserId(token)).thenReturn(userId);
+        when(userService.fetchUserById(userId)).thenThrow(new NotFoundException("User not found"));
+        mockMvc.perform(get("/v1/users/" + userId)
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("User not found"));
+    }
+
+    @Test
+    void fetchUserById_UnexpectedError_ReturnsInternalServerError() throws Exception {
+        String userId = "usr-12345678";
+        String token = "valid.jwt.token";
+        when(jwtUtil.extractUserId(token)).thenReturn(userId);
+        when(userService.fetchUserById(userId)).thenThrow(new RuntimeException("DB down"));
+        mockMvc.perform(get("/v1/users/" + userId)
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("Unexpected error"));
     }
 } 

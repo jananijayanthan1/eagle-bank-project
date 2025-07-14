@@ -18,22 +18,18 @@ public class JwtUtil {
         claims.put("email", email);
         claims.put("sub", email);
         claims.put("iat", new Date(System.currentTimeMillis()));
-        claims.put("exp", new Date(System.currentTimeMillis() + EXPIRATION_TIME));
+        claims.put("exp", System.currentTimeMillis() + EXPIRATION_TIME);
         claims.put("iss", "eaglebank-api");
         claims.put("aud", "eaglebank-api");
         claims.put("role", "user");
-        
         // Simple JWT implementation for demo purposes
         String header = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
-        String payload = claims.toString().replace("=", "\":\"").replace(", ", "\",\"").replace("{", "{\"").replace("}", "\"}");
-        
+        String payload = claims.toString();
         String headerEncoded = Base64.getUrlEncoder().withoutPadding().encodeToString(header.getBytes());
         String payloadEncoded = Base64.getUrlEncoder().withoutPadding().encodeToString(payload.getBytes());
-        
         String signature = Base64.getUrlEncoder().withoutPadding().encodeToString(
             (headerEncoded + "." + payloadEncoded + "." + SECRET_KEY).getBytes()
         );
-        
         return headerEncoded + "." + payloadEncoded + "." + signature;
     }
     
@@ -43,9 +39,23 @@ public class JwtUtil {
             if (parts.length != 3) {
                 return false;
             }
-            
             String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-            return payload.contains(email) && !isTokenExpired(token);
+            if (!payload.contains(email)) return false;
+            if (isTokenExpired(token)) return false;
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public Boolean isTokenValid(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                return false;
+            }
+            if (isTokenExpired(token)) return false;
+            return true;
         } catch (Exception e) {
             return false;
         }
@@ -55,13 +65,12 @@ public class JwtUtil {
         try {
             String[] parts = token.split("\\.");
             String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-            // Simple extraction - in production use proper JSON parsing
-            if (payload.contains("sub")) {
-                int start = payload.indexOf("sub") + 5;
-                int end = payload.indexOf("\"", start);
-                return payload.substring(start, end);
+            // Try sub= first, then email=
+            String email = extractValueFromPayload(payload, "sub");
+            if (email == null) {
+                email = extractValueFromPayload(payload, "email");
             }
-            return null;
+            return email;
         } catch (Exception e) {
             return null;
         }
@@ -71,31 +80,43 @@ public class JwtUtil {
         try {
             String[] parts = token.split("\\.");
             String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-            // Simple extraction - in production use proper JSON parsing
-            if (payload.contains("userId")) {
-                int start = payload.indexOf("userId") + 8;
-                int end = payload.indexOf("\"", start);
-                return payload.substring(start, end);
-            }
-            return null;
+            return extractValueFromPayload(payload, "userId");
         } catch (Exception e) {
             return null;
         }
+    }
+
+    // Helper to extract value from Map.toString() format: {key1=val1, key2=val2, ...}
+    private String extractValueFromPayload(String payload, String key) {
+        String search = key + "=";
+        int start = payload.indexOf(search);
+        if (start == -1) return null;
+        start += search.length();
+        int end = payload.indexOf(",", start);
+        if (end == -1) end = payload.indexOf("}", start);
+        if (end == -1) end = payload.length();
+        return payload.substring(start, end).trim();
     }
     
     private Boolean isTokenExpired(String token) {
         try {
             String[] parts = token.split("\\.");
             String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-            // Simple expiration check - in production use proper JSON parsing
-            if (payload.contains("exp")) {
-                int start = payload.indexOf("exp") + 5;
-                int end = payload.indexOf("\"", start);
-                String expStr = payload.substring(start, end);
+            String expStr = extractValueFromPayload(payload, "exp");
+            if (expStr == null) return true;
+            // Try to parse as long (timestamp), fallback to Date.toString()
+            try {
                 long expTime = Long.parseLong(expStr);
                 return new Date().getTime() > expTime;
+            } catch (NumberFormatException nfe) {
+                // Try parsing as Date string
+                try {
+                    Date expDate = new Date(expStr);
+                    return new Date().after(expDate);
+                } catch (Exception e) {
+                    return true;
+                }
             }
-            return true;
         } catch (Exception e) {
             return true;
         }

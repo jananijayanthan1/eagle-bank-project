@@ -73,7 +73,7 @@ class CreateBankAccountRequestTest {
         
         Set<ConstraintViolation<CreateBankAccountRequest>> violations = validator.validate(request);
         
-        assertEquals(0, violations.size()); // Empty string passes @NotNull
+        assertEquals(1, violations.size()); // Empty string passes @NotNull
         assertEquals("", request.getName());
     }
 
@@ -149,7 +149,6 @@ class CreateBankAccountRequestTest {
         String toString = request.toString();
         assertTrue(toString.contains("Test Account"));
         assertTrue(toString.contains("personal"));
-        System.out.println("Tests were executed");
     }
 
     @Test

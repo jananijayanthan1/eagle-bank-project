@@ -36,4 +36,19 @@ public class UserRepositoryTest {
         assertEquals("Jane Doe", found.getName());
         assertEquals("jane.doe@example.com", found.getEmail());
     }
+
+    @Test
+    void findByEmail_ReturnsUser() {
+        userRepository.save(user);
+        User found = userRepository.findByEmail("jane.doe@example.com");
+        assertNotNull(found);
+        assertEquals("usr-12345678", found.getId());
+        assertEquals("Jane Doe", found.getName());
+    }
+
+    @Test
+    void findById_NotFound_ReturnsEmpty() {
+        User found = userRepository.findById("usr-nonexistent").orElse(null);
+        assertNull(found);
+    }
 } 

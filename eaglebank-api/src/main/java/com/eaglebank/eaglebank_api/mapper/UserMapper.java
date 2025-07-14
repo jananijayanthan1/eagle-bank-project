@@ -49,8 +49,6 @@ public class UserMapper {
             response.setAddress(null);
         }
         // Set timestamps as needed
-        System.out.println("User created: " + user.getCreatedTimestamp());
-        System.out.println("User updated: " + user.getUpdatedTimestamp());
         return response;
     }
 } 
