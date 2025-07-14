@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.eaglebank.eaglebank_api.exception.NotFoundException;
 
 @Service
 public class UserService {
@@ -25,11 +26,15 @@ public class UserService {
 
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
-        System.out.println("Password: " + request.getPassword());
         request.setPassword(passwordEncoder.encode(request.getPassword()));
-        System.out.println("Password: " + request.getPassword());
         User user = userMapper.toEntity(request);
         user = userRepository.save(user);
+        return userMapper.toResponse(user);
+    }
+
+    public UserResponse fetchUserById(String userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
         return userMapper.toResponse(user);
     }
 } 

@@ -26,23 +26,19 @@ public class AuthenticationService {
     
     public AuthResponse authenticate(AuthRequest request) {
         // Find user by email
-        System.out.println("Finding user by email: " + request.getEmail());
         User user = userRepository.findByEmail(request.getEmail());
         
         if (user == null) {
-            System.out.println("User not found with email: " + request.getEmail());
             throw new AuthenticationException("User not found with email: " + request.getEmail());
         }
         
         // Compare the hashed password from database with the encoded password from request
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            System.out.println("Invalid password");
             throw new AuthenticationException("Invalid password");
         }
         
         // Generate JWT token with user ID and email
         String token = jwtUtil.generateToken(user.getId(), user.getEmail());
-        System.out.println("Token generated: " + token);
         return new AuthResponse(token);
     }
 }
