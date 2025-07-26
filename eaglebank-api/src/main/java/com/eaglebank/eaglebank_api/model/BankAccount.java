@@ -55,4 +55,8 @@ public class BankAccount {
     @NotNull
     @Column(name = "updated_timestamp")
     private OffsetDateTime updatedTimestamp;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 } 

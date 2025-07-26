@@ -7,6 +7,7 @@ import com.eaglebank.eaglebank_api.model.Transaction;
 import com.eaglebank.eaglebank_api.model.request.CreateTransactionRequest;
 import com.eaglebank.eaglebank_api.repository.BankAccountRepository;
 import com.eaglebank.eaglebank_api.repository.TransactionRepository;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.Random;
 public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final BankAccountRepository bankAccountRepository;
+    private static final int MAX_RETRIES = 3;
 
     public TransactionService(TransactionRepository transactionRepository, BankAccountRepository bankAccountRepository) {
         this.transactionRepository = transactionRepository;
@@ -27,6 +29,30 @@ public class TransactionService {
 
     @Transactional
     public Transaction createTransaction(String accountNumber, String userId, CreateTransactionRequest request) {
+        int retryCount = 0;
+        
+        while (retryCount < MAX_RETRIES) {
+            try {
+                return performTransaction(accountNumber, userId, request);
+            } catch (OptimisticLockingFailureException e) {
+                retryCount++;
+                if (retryCount >= MAX_RETRIES) {
+                    throw new RuntimeException("Transaction failed after " + MAX_RETRIES + " retries due to concurrent modification", e);
+                }
+                // Small delay before retry to reduce contention
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Transaction interrupted", ie);
+                }
+            }
+        }
+        
+        throw new RuntimeException("Unexpected error in transaction processing");
+    }
+
+    private Transaction performTransaction(String accountNumber, String userId, CreateTransactionRequest request) {
         BankAccount account = bankAccountRepository.findByAccountNumber(accountNumber);
         if (account == null) {
             throw new NotFoundException("Bank account not found");
@@ -40,6 +66,7 @@ public class TransactionService {
         if (request.getType() == TransactionType.withdrawal && account.getBalance() < request.getAmount()) {
             throw new IllegalArgumentException("Insufficient funds");
         }
+        
         // Update account balance
         if (request.getType() == TransactionType.deposit) {
             account.setBalance(account.getBalance() + request.getAmount());
@@ -48,6 +75,7 @@ public class TransactionService {
         }
         account.setUpdatedTimestamp(OffsetDateTime.now());
         bankAccountRepository.save(account);
+        
         Transaction transaction = new Transaction();
         // Generate a valid transaction ID matching ^tan-[A-Za-z0-9]+$
         String random = Long.toString(System.currentTimeMillis(), 36) + Integer.toString(new Random().nextInt(1000), 36);
@@ -58,6 +86,7 @@ public class TransactionService {
         transaction.setCurrency(com.eaglebank.eaglebank_api.enums.Currency.valueOf(request.getCurrency().getCurrencyCode()));
         transaction.setType(request.getType());
         transaction.setCreatedTimestamp(OffsetDateTime.now());
+        
         try {
             Transaction savedTransaction = transactionRepository.save(transaction);
             transactionRepository.flush();

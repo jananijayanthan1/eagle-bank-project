@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS bank_accounts (
   currency TEXT NOT NULL CHECK (currency = 'GBP'),
   created_timestamp TIMESTAMP NOT NULL,
   updated_timestamp TIMESTAMP NOT NULL,
+  version INTEGER DEFAULT 0,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
